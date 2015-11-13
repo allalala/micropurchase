@@ -85,4 +85,78 @@ RSpec.feature "bidder interacts with auction", type: :feature do
     expect(page).to have_content("No bids yet.")
   end
 
+  scenario "Viewing bid history for running auction" do
+    Timecop.scale(36000) do
+      create_running_auction
+    end
+    path = "/auctions/#{@auction.id}/bids"
+    visit path
+
+    # sort the bids so that newest is first
+    bids = @auction.bids.sort_by {|bid| bid.created_at}.reverse
+
+    # ensure the table has the correct content, in the correct order
+    bids.each_with_index do |bid, i|
+      row_number = i + 1
+      unredacted_bidder_name = bid.bidder.name
+      bid = Presenter::Bid.new(bid)
+
+      # check the "name" column
+      within(:xpath, "//table/tbody/tr[#{row_number}]/td[1]") do
+        expect(page).not_to have_content(unredacted_bidder_name)
+        expect(page).to have_content("[Name witheld until the auction ends]")
+      end
+
+      # check the "amount" column
+      within(:xpath, "//table/tbody/tr[#{row_number}]/td[2]") do
+        expect(page).to(
+          have_content(
+            ApplicationController.helpers.number_to_currency(bid.amount)
+          )
+        )
+      end
+
+      # check the "date" column
+      within(:xpath, "//table/tbody/tr[#{row_number}]/td[3]") do
+        expect(page).to have_content(bid.time)
+      end
+    end
+  end
+
+  scenario "Viewing bid history for a closed auction" do
+    Timecop.scale(36000) do
+      create_closed_auction
+    end
+    path = "/auctions/#{@auction.id}/bids"
+    visit path
+
+    # sort the bids so that newest is first
+    bids = @auction.bids.sort_by {|bid| bid.created_at}.reverse
+
+    # ensure the table has the correct content, in the correct order
+    bids.each_with_index do |bid, i|
+      row_number = i + 1
+      unredacted_bidder_name = bid.bidder.name
+      bid = Presenter::Bid.new(bid)
+
+      # check the "name" column
+      within(:xpath, "//table/tbody/tr[#{row_number}]/td[1]") do
+        expect(page).to have_content (unredacted_bidder_name)
+      end
+
+      # check the "amount" column
+      within(:xpath, "//table/tbody/tr[#{row_number}]/td[2]") do
+        expect(page).to(
+          have_content(
+            ApplicationController.helpers.number_to_currency(bid.amount)
+          )
+        )
+      end
+
+      # check the "date" column
+      within(:xpath, "//table/tbody/tr[#{row_number}]/td[3]") do
+        expect(page).to have_content(bid.time)
+      end
+    end
+  end
 end
