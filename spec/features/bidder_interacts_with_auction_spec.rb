@@ -140,23 +140,14 @@ RSpec.feature "bidder interacts with auction", type: :feature do
       bid = Presenter::Bid.new(bid)
 
       # check the "name" column
-      within(:xpath, "//table/tbody/tr[#{row_number}]/td[1]") do
-        expect(page).to have_content (unredacted_bidder_name)
-      end
+      expect_cel_to_have_content(page, row_number, 1, unredacted_bidder_name)
 
       # check the "amount" column
-      within(:xpath, "//table/tbody/tr[#{row_number}]/td[2]") do
-        expect(page).to(
-          have_content(
-            ApplicationController.helpers.number_to_currency(bid.amount)
-          )
-        )
-      end
+      amount = ApplicationController.helpers.number_to_currency(bid.amount)
+      expect_cel_to_have_content(page, row_number, 2, amount)
 
       # check the "date" column
-      within(:xpath, "//table/tbody/tr[#{row_number}]/td[3]") do
-        expect(page).to have_content(bid.time)
-      end
+      expect_cel_to_have_content(page, row_number, 3, bid.time)
     end
   end
 end
